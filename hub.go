@@ -15,11 +15,11 @@ type Message interface {
 	Marshal() ([]byte, error)
 }
 
-type Handler func(ctx context.Context, message Message, writing chan<- Message)
-
 type Decoder func([]byte) (Message, error)
 
 type Logger func(ctx context.Context, err error, message string)
+
+type Handler func(ctx context.Context, message Message, writing chan<- Message)
 
 type Hub struct {
 	ctx    context.Context
@@ -28,10 +28,10 @@ type Hub struct {
 
 	conn *websocket.Conn
 
-	routes map[string]Handler
-
 	decoder Decoder
 	logger  Logger
+
+	routes map[string]Handler
 
 	reading chan Message
 	writing chan Message
@@ -39,11 +39,11 @@ type Hub struct {
 	debug bool
 }
 
-func New(conn *websocket.Conn, routes map[string]Handler, decoder Decoder, opts ...Option) *Hub {
+func New(conn *websocket.Conn, decoder Decoder, routes map[string]Handler, opts ...Option) *Hub {
 	h := &Hub{
 		conn:    conn,
-		routes:  routes,
 		decoder: decoder,
+		routes:  routes,
 		reading: make(chan Message, 100),
 		writing: make(chan Message, 100),
 	}
