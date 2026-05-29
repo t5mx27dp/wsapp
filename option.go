@@ -10,6 +10,12 @@ func WithContext(ctx context.Context) Option {
 	}
 }
 
+func WithLogger(logger Logger) Option {
+	return func(h *Hub) {
+		h.logger = logger
+	}
+}
+
 func WithDebug() Option {
 	return func(h *Hub) {
 		h.debug = true
