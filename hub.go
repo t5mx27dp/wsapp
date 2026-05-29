@@ -11,7 +11,7 @@ import (
 )
 
 type Message interface {
-	GetRoute() string
+	GetType() string
 	Marshal() ([]byte, error)
 }
 
@@ -52,10 +52,6 @@ func New(conn *websocket.Conn, routes map[string]Handler, decoder Decoder, opts 
 		opt(h)
 	}
 
-	if h.ctx == nil {
-		h.ctx, h.cancel = context.WithCancel(context.Background())
-	}
-
 	if h.logger == nil {
 		h.logger = h.handleLog
 	}
@@ -67,7 +63,9 @@ func (h *Hub) Writing() chan<- Message {
 	return h.writing
 }
 
-func (h *Hub) Run() {
+func (h *Hub) Run(ctx context.Context) {
+	h.ctx, h.cancel = context.WithCancel(ctx)
+
 	h.wg.Add(3)
 	go h.read()
 	go h.write()
@@ -196,9 +194,9 @@ func (h *Hub) handle() {
 		case <-h.ctx.Done():
 			return
 		case message := <-h.reading:
-			handler, ok := h.routes[message.GetRoute()]
+			handler, ok := h.routes[message.GetType()]
 			if !ok {
-				h.logger(h.ctx, fmt.Errorf("route %s handler not found", message.GetRoute()), "")
+				h.logger(h.ctx, fmt.Errorf("route %s handler not found", message.GetType()), "")
 				continue
 			}
 
