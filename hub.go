@@ -10,8 +10,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type MessageType string
+
 type Message interface {
-	GetType() string
+	GetType() MessageType
 	Marshal() ([]byte, error)
 }
 
@@ -31,7 +33,7 @@ type Hub struct {
 	decoder Decoder
 	logger  Logger
 
-	routes map[string]Handler
+	routes map[MessageType]Handler
 
 	reading chan Message
 	writing chan Message
@@ -39,7 +41,7 @@ type Hub struct {
 	debug bool
 }
 
-func New(conn *websocket.Conn, decoder Decoder, routes map[string]Handler, opts ...Option) *Hub {
+func New(conn *websocket.Conn, decoder Decoder, routes map[MessageType]Handler, opts ...Option) *Hub {
 	h := &Hub{
 		conn:    conn,
 		decoder: decoder,
