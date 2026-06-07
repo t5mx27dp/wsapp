@@ -23,7 +23,7 @@ type Logger func(ctx context.Context, err error, message string)
 
 type Handler func(ctx context.Context, message Message, writing chan<- Message)
 
-type Hub struct {
+type WSHub struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
@@ -33,7 +33,7 @@ type Hub struct {
 	decoder Decoder
 	logger  Logger
 
-	routes map[MessageType]Handler
+	handlers map[MessageType]Handler
 
 	reading chan Message
 	writing chan Message
@@ -41,13 +41,11 @@ type Hub struct {
 	debug bool
 }
 
-func New(conn *websocket.Conn, decoder Decoder, routes map[MessageType]Handler, opts ...Option) *Hub {
-	h := &Hub{
-		conn:    conn,
-		decoder: decoder,
-		routes:  routes,
-		reading: make(chan Message, 100),
-		writing: make(chan Message, 100),
+func New(conn *websocket.Conn, decoder Decoder, handlers map[MessageType]Handler, opts ...Option) *WSHub {
+	h := &WSHub{
+		conn:     conn,
+		decoder:  decoder,
+		handlers: handlers,
 	}
 
 	for _, opt := range opts {
@@ -58,14 +56,22 @@ func New(conn *websocket.Conn, decoder Decoder, routes map[MessageType]Handler, 
 		h.logger = h.handleLog
 	}
 
+	if h.reading == nil {
+		h.reading = make(chan Message, 100)
+	}
+
+	if h.writing == nil {
+		h.writing = make(chan Message, 100)
+	}
+
 	return h
 }
 
-func (h *Hub) Writing() chan<- Message {
+func (h *WSHub) Writing() chan<- Message {
 	return h.writing
 }
 
-func (h *Hub) Run(ctx context.Context) {
+func (h *WSHub) Run(ctx context.Context) {
 	h.ctx, h.cancel = context.WithCancel(ctx)
 
 	h.wg.Add(3)
@@ -75,7 +81,7 @@ func (h *Hub) Run(ctx context.Context) {
 	h.wg.Wait()
 }
 
-func (h *Hub) read() {
+func (h *WSHub) read() {
 	h.logger(h.ctx, nil, "start read loop")
 
 	defer func() {
@@ -126,7 +132,7 @@ func (h *Hub) read() {
 	}
 }
 
-func (h *Hub) write() {
+func (h *WSHub) write() {
 	h.logger(h.ctx, nil, "start write loop")
 
 	defer func() {
@@ -181,7 +187,7 @@ func (h *Hub) write() {
 	}
 }
 
-func (h *Hub) handle() {
+func (h *WSHub) handle() {
 	h.logger(h.ctx, nil, "start handle loop")
 
 	defer func() {
@@ -196,9 +202,9 @@ func (h *Hub) handle() {
 		case <-h.ctx.Done():
 			return
 		case message := <-h.reading:
-			handler, ok := h.routes[message.GetType()]
+			handler, ok := h.handlers[message.GetType()]
 			if !ok {
-				h.logger(h.ctx, fmt.Errorf("route %s handler not found", message.GetType()), "")
+				h.logger(h.ctx, fmt.Errorf("handler %s not found", message.GetType()), "")
 				continue
 			}
 
@@ -207,7 +213,7 @@ func (h *Hub) handle() {
 	}
 }
 
-func (h *Hub) handleLog(ctx context.Context, err error, message string) {
+func (h *WSHub) handleLog(ctx context.Context, err error, message string) {
 	if err != nil {
 		log.Println(err)
 		return
