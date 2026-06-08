@@ -8,12 +8,6 @@ func WithLogger(logger Logger) Option {
 	}
 }
 
-func WithDebug() Option {
-	return func(h *Hub) {
-		h.debug = true
-	}
-}
-
 func WithReadingBufferSize(size uint32) Option {
 	return func(h *Hub) {
 		h.reading = make(chan Message, size)
@@ -23,5 +17,11 @@ func WithReadingBufferSize(size uint32) Option {
 func WithWritingBufferSize(size uint32) Option {
 	return func(h *Hub) {
 		h.writing = make(chan Message, size)
+	}
+}
+
+func WithDebug() Option {
+	return func(h *Hub) {
+		h.debug = true
 	}
 }
