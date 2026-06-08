@@ -23,7 +23,7 @@ type Logger func(ctx context.Context, err error, message string)
 
 type Handler func(ctx context.Context, message Message, writing chan<- Message)
 
-type WSHub struct {
+type Hub struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
@@ -41,8 +41,8 @@ type WSHub struct {
 	debug bool
 }
 
-func New(conn *websocket.Conn, decoder Decoder, handlers map[MessageType]Handler, opts ...Option) *WSHub {
-	h := &WSHub{
+func New(conn *websocket.Conn, decoder Decoder, handlers map[MessageType]Handler, opts ...Option) *Hub {
+	h := &Hub{
 		conn:     conn,
 		decoder:  decoder,
 		handlers: handlers,
@@ -67,11 +67,11 @@ func New(conn *websocket.Conn, decoder Decoder, handlers map[MessageType]Handler
 	return h
 }
 
-func (h *WSHub) Writing() chan<- Message {
+func (h *Hub) Writing() chan<- Message {
 	return h.writing
 }
 
-func (h *WSHub) Run(ctx context.Context) {
+func (h *Hub) Run(ctx context.Context) {
 	h.ctx, h.cancel = context.WithCancel(ctx)
 
 	h.wg.Add(3)
@@ -81,7 +81,7 @@ func (h *WSHub) Run(ctx context.Context) {
 	h.wg.Wait()
 }
 
-func (h *WSHub) read() {
+func (h *Hub) read() {
 	h.logger(h.ctx, nil, "start read loop")
 
 	defer func() {
@@ -132,7 +132,7 @@ func (h *WSHub) read() {
 	}
 }
 
-func (h *WSHub) write() {
+func (h *Hub) write() {
 	h.logger(h.ctx, nil, "start write loop")
 
 	defer func() {
@@ -187,7 +187,7 @@ func (h *WSHub) write() {
 	}
 }
 
-func (h *WSHub) handle() {
+func (h *Hub) handle() {
 	h.logger(h.ctx, nil, "start handle loop")
 
 	defer func() {
@@ -213,7 +213,7 @@ func (h *WSHub) handle() {
 	}
 }
 
-func (h *WSHub) handleLog(ctx context.Context, err error, message string) {
+func (h *Hub) handleLog(ctx context.Context, err error, message string) {
 	if err != nil {
 		log.Println(err)
 		return
