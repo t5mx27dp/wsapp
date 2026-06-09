@@ -1,27 +1,29 @@
 package wshub
 
-type Option func(*Hub)
+import "github.com/t5mx27dp/app"
 
-func WithLogger(logger Logger) Option {
-	return func(h *Hub) {
-		h.logger = logger
+type Option func(*config)
+
+func WithLogger(logger app.Logger) Option {
+	return func(c *config) {
+		c.logger = logger
 	}
 }
 
 func WithReadingBufferSize(size uint32) Option {
-	return func(h *Hub) {
-		h.reading = make(chan Message, size)
+	return func(c *config) {
+		c.reading = make(chan Message, size)
 	}
 }
 
 func WithWritingBufferSize(size uint32) Option {
-	return func(h *Hub) {
-		h.writing = make(chan Message, size)
+	return func(c *config) {
+		c.writing = make(chan Message, size)
 	}
 }
 
 func WithDebug() Option {
-	return func(h *Hub) {
-		h.debug = true
+	return func(c *config) {
+		c.debug = true
 	}
 }
