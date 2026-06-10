@@ -1,4 +1,4 @@
-package wshub
+package wsapp
 
 import (
 	"context"

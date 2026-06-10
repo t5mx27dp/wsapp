@@ -1,4 +1,4 @@
-package wshub
+package wsapp
 
 import (
 	"github.com/t5mx27dp/wsapp/message"
