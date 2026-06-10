@@ -18,8 +18,8 @@ func WithWritingBufferSize(size uint32) Option {
 	}
 }
 
-func WithDebug() Option {
+func WithDebug(debug func() bool) Option {
 	return func(a *App) {
-		a.debug = true
+		a.debug = debug
 	}
 }

@@ -31,7 +31,7 @@ type App struct {
 	reading chan message.Message
 	writing chan message.Message
 
-	debug bool
+	debug func() bool
 }
 
 func New(conn *websocket.Conn, logger app.Logger, decoder Decoder, handlers map[message.Type]Handler, opts ...Option) *App {
@@ -52,6 +52,12 @@ func New(conn *websocket.Conn, logger app.Logger, decoder Decoder, handlers map[
 
 	if a.writing == nil {
 		a.writing = make(chan message.Message, 100)
+	}
+
+	if a.debug == nil {
+		a.debug = func() bool {
+			return false
+		}
 	}
 
 	return a
@@ -113,7 +119,7 @@ func (a *App) read() {
 				continue
 			}
 
-			if a.debug {
+			if a.debug() {
 				a.logger.Info(a.ctx, fmt.Sprintf("read message: %s", string(b)), nil)
 			}
 
@@ -170,7 +176,7 @@ func (a *App) write() {
 				return
 			}
 
-			if a.debug {
+			if a.debug() {
 				a.logger.Info(a.ctx, fmt.Sprintf("write message: %s", string(b)), nil)
 			}
 		}
