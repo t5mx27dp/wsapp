@@ -78,10 +78,10 @@ func (a *App) Run(ctx context.Context) {
 }
 
 func (a *App) read() {
-	a.logger.Info(a.ctx, "start read loop", nil)
+	a.logger.Log(a.ctx, "start read loop", nil)
 
 	defer func() {
-		a.logger.Info(a.ctx, "stop read loop", nil)
+		a.logger.Log(a.ctx, "stop read loop", nil)
 		a.conn.Close()
 		a.cancel()
 		a.wg.Done()
@@ -90,7 +90,7 @@ func (a *App) read() {
 	a.conn.SetPongHandler(func(string) error {
 		err := a.conn.SetReadDeadline(time.Now().Add(time.Second * 30))
 		if err != nil {
-			a.logger.Error(a.ctx, err.Error(), nil)
+			a.logger.Error(a.ctx, err, nil)
 			return err
 		}
 		return nil
@@ -98,7 +98,7 @@ func (a *App) read() {
 
 	err := a.conn.SetReadDeadline(time.Now().Add(time.Second * 30))
 	if err != nil {
-		a.logger.Error(a.ctx, err.Error(), nil)
+		a.logger.Error(a.ctx, err, nil)
 		return
 	}
 
@@ -109,18 +109,18 @@ func (a *App) read() {
 		default:
 			_, b, err := a.conn.ReadMessage()
 			if err != nil {
-				a.logger.Error(a.ctx, err.Error(), nil)
+				a.logger.Error(a.ctx, err, nil)
 				return
 			}
 
 			message, err := a.decoder(b)
 			if err != nil {
-				a.logger.Error(a.ctx, err.Error(), nil)
+				a.logger.Error(a.ctx, err, nil)
 				continue
 			}
 
 			if a.debug() {
-				a.logger.Info(a.ctx, fmt.Sprintf("read message: %s", string(b)), nil)
+				a.logger.Log(a.ctx, fmt.Sprintf("read message: %s", string(b)), nil)
 			}
 
 			a.reading <- message
@@ -129,10 +129,10 @@ func (a *App) read() {
 }
 
 func (a *App) write() {
-	a.logger.Info(a.ctx, "start write loop", nil)
+	a.logger.Log(a.ctx, "start write loop", nil)
 
 	defer func() {
-		a.logger.Info(a.ctx, "stop write loop", nil)
+		a.logger.Log(a.ctx, "stop write loop", nil)
 		a.conn.Close()
 		a.cancel()
 		a.wg.Done()
@@ -148,46 +148,46 @@ func (a *App) write() {
 		case <-ticker.C:
 			err := a.conn.SetWriteDeadline(time.Now().Add(time.Second * 10))
 			if err != nil {
-				a.logger.Error(a.ctx, err.Error(), nil)
+				a.logger.Error(a.ctx, err, nil)
 				return
 			}
 
 			err = a.conn.WriteMessage(websocket.PingMessage, nil)
 			if err != nil {
-				a.logger.Error(a.ctx, err.Error(), nil)
+				a.logger.Error(a.ctx, err, nil)
 				return
 			}
 		case message := <-a.writing:
 			err := a.conn.SetWriteDeadline(time.Now().Add(time.Second * 10))
 			if err != nil {
-				a.logger.Error(a.ctx, err.Error(), nil)
+				a.logger.Error(a.ctx, err, nil)
 				return
 			}
 
 			b, err := message.Marshal()
 			if err != nil {
-				a.logger.Error(a.ctx, err.Error(), nil)
+				a.logger.Error(a.ctx, err, nil)
 				continue
 			}
 
 			err = a.conn.WriteMessage(websocket.TextMessage, b)
 			if err != nil {
-				a.logger.Error(a.ctx, err.Error(), nil)
+				a.logger.Error(a.ctx, err, nil)
 				return
 			}
 
 			if a.debug() {
-				a.logger.Info(a.ctx, fmt.Sprintf("write message: %s", string(b)), nil)
+				a.logger.Log(a.ctx, fmt.Sprintf("write message: %s", string(b)), nil)
 			}
 		}
 	}
 }
 
 func (a *App) handle() {
-	a.logger.Info(a.ctx, "start handle loop", nil)
+	a.logger.Log(a.ctx, "start handle loop", nil)
 
 	defer func() {
-		a.logger.Info(a.ctx, "stop handle loop", nil)
+		a.logger.Log(a.ctx, "stop handle loop", nil)
 		a.conn.Close()
 		a.cancel()
 		a.wg.Done()
@@ -200,7 +200,7 @@ func (a *App) handle() {
 		case message := <-a.reading:
 			handler, ok := a.handlers[message.GetType()]
 			if !ok {
-				a.logger.Error(a.ctx, fmt.Sprintf("handler %s not found", message.GetType()), nil)
+				a.logger.Error(a.ctx, fmt.Errorf("handler %s not found", message.GetType()), nil)
 				continue
 			}
 
