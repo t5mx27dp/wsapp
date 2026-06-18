@@ -76,14 +76,14 @@ func (a *App) Run(ctx context.Context) error {
 }
 
 func (a *App) read() {
-	a.logger.Log(a.ctx, "start read loop", nil)
-
 	defer func() {
-		a.logger.Log(a.ctx, "stop read loop", nil)
 		a.conn.Close()
 		a.cancel()
 		a.wg.Done()
 	}()
+
+	a.logger.Log(a.ctx, "start read loop", nil)
+	defer a.logger.Log(a.ctx, "stop read loop", nil)
 
 	a.conn.SetPongHandler(func(string) error {
 		err := a.conn.SetReadDeadline(time.Now().Add(time.Second * 30))
@@ -123,14 +123,14 @@ func (a *App) read() {
 }
 
 func (a *App) write() {
-	a.logger.Log(a.ctx, "start write loop", nil)
-
 	defer func() {
-		a.logger.Log(a.ctx, "stop write loop", nil)
 		a.conn.Close()
 		a.cancel()
 		a.wg.Done()
 	}()
+
+	a.logger.Log(a.ctx, "start write loop", nil)
+	defer a.logger.Log(a.ctx, "stop write loop", nil)
 
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
@@ -174,14 +174,14 @@ func (a *App) write() {
 }
 
 func (a *App) handle() {
-	a.logger.Log(a.ctx, "start handle loop", nil)
-
 	defer func() {
-		a.logger.Log(a.ctx, "stop handle loop", nil)
 		a.conn.Close()
 		a.cancel()
 		a.wg.Done()
 	}()
+
+	a.logger.Log(a.ctx, "start handle loop", nil)
+	defer a.logger.Log(a.ctx, "stop handle loop", nil)
 
 	for {
 		select {
