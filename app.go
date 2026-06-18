@@ -35,8 +35,12 @@ type App struct {
 	writing chan message.Message
 }
 
-func New(conn *websocket.Conn, logger app.Logger, decoder Decoder, encoder Encoder, handlers map[message.Type]Handler, opts ...Option) *App {
+func New(ctx context.Context, conn *websocket.Conn, logger app.Logger, decoder Decoder, encoder Encoder, handlers map[message.Type]Handler, opts ...Option) *App {
+	ctx, cancel := context.WithCancel(ctx)
+
 	a := &App{
+		ctx:      ctx,
+		cancel:   cancel,
 		conn:     conn,
 		logger:   logger,
 		decoder:  decoder,
@@ -63,23 +67,20 @@ func (a *App) Writing() chan<- message.Message {
 	return a.writing
 }
 
-func (a *App) Run(ctx context.Context) error {
-	a.ctx, a.cancel = context.WithCancel(ctx)
-
+func (a *App) Run() error {
 	a.wg.Add(3)
 	go a.read()
 	go a.write()
 	go a.handle()
 	a.wg.Wait()
-
 	return nil
 }
 
 func (a *App) read() {
 	defer func() {
-		a.conn.Close()
-		a.cancel()
 		a.wg.Done()
+		a.cancel()
+		a.conn.Close()
 	}()
 
 	a.logger.Log(a.ctx, "start read loop", nil)
@@ -124,9 +125,9 @@ func (a *App) read() {
 
 func (a *App) write() {
 	defer func() {
-		a.conn.Close()
-		a.cancel()
 		a.wg.Done()
+		a.cancel()
+		a.conn.Close()
 	}()
 
 	a.logger.Log(a.ctx, "start write loop", nil)
@@ -175,9 +176,9 @@ func (a *App) write() {
 
 func (a *App) handle() {
 	defer func() {
-		a.conn.Close()
-		a.cancel()
 		a.wg.Done()
+		a.cancel()
+		a.conn.Close()
 	}()
 
 	a.logger.Log(a.ctx, "start handle loop", nil)
