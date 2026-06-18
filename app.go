@@ -2,6 +2,7 @@ package wsapp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -68,6 +69,10 @@ func (a *App) Writing() chan<- message.Message {
 }
 
 func (a *App) Run(ctx context.Context) {
+	if a.ctx != nil {
+		return errors.New("websocket app is running")
+	}
+
 	a.ctx, a.cancel = context.WithCancel(ctx)
 
 	a.wg.Add(3)
