@@ -17,9 +17,3 @@ func WithWritingBufferSize(size uint32) Option {
 		a.writing = make(chan message.Message, size)
 	}
 }
-
-func WithDebug(debug func() bool) Option {
-	return func(a *App) {
-		a.debug = debug
-	}
-}

@@ -14,6 +14,8 @@ import (
 
 type Decoder func([]byte) (message.Message, error)
 
+type Encoder func(message.Message) ([]byte, error)
+
 type Handler func(ctx context.Context, message message.Message, writing chan<- message.Message)
 
 type App struct {
@@ -26,20 +28,20 @@ type App struct {
 	logger app.Logger
 
 	decoder Decoder
+	encoder Encoder
 
 	handlers map[message.Type]Handler
 
 	reading chan message.Message
 	writing chan message.Message
-
-	debug func() bool
 }
 
-func New(conn *websocket.Conn, logger app.Logger, decoder Decoder, handlers map[message.Type]Handler, opts ...Option) *App {
+func New(conn *websocket.Conn, logger app.Logger, decoder Decoder, encoder Encoder, handlers map[message.Type]Handler, opts ...Option) *App {
 	a := &App{
 		conn:     conn,
 		logger:   logger,
 		decoder:  decoder,
+		encoder:  encoder,
 		handlers: handlers,
 	}
 
@@ -55,12 +57,6 @@ func New(conn *websocket.Conn, logger app.Logger, decoder Decoder, handlers map[
 		a.writing = make(chan message.Message, 100)
 	}
 
-	if a.debug == nil {
-		a.debug = func() bool {
-			return false
-		}
-	}
-
 	return a
 }
 
@@ -68,7 +64,7 @@ func (a *App) Writing() chan<- message.Message {
 	return a.writing
 }
 
-func (a *App) Run(ctx context.Context) {
+func (a *App) Run(ctx context.Context) error {
 	if a.ctx != nil {
 		return errors.New("websocket app is running")
 	}
@@ -80,6 +76,8 @@ func (a *App) Run(ctx context.Context) {
 	go a.write()
 	go a.handle()
 	a.wg.Wait()
+
+	return nil
 }
 
 func (a *App) read() {
@@ -124,10 +122,6 @@ func (a *App) read() {
 				continue
 			}
 
-			if a.debug() {
-				a.logger.Log(a.ctx, fmt.Sprintf("read message: %s", string(b)), nil)
-			}
-
 			a.reading <- message
 		}
 	}
@@ -169,7 +163,7 @@ func (a *App) write() {
 				return
 			}
 
-			b, err := message.Marshal()
+			b, err := a.encoder(message)
 			if err != nil {
 				a.logger.Error(a.ctx, err, nil)
 				continue
@@ -179,10 +173,6 @@ func (a *App) write() {
 			if err != nil {
 				a.logger.Error(a.ctx, err, nil)
 				return
-			}
-
-			if a.debug() {
-				a.logger.Log(a.ctx, fmt.Sprintf("write message: %s", string(b)), nil)
 			}
 		}
 	}
