@@ -1,0 +1,10 @@
+template: testify
+recursive: true
+pkgname: '{{.SrcPackageName}}mock'
+structname: '{{.InterfaceName}}'
+filename: '{{.InterfaceName | snakecase}}.go' 
+dir: '{{.InterfaceDir}}/mock'
+packages:
+  github.com/t5mx27dp/wsapp:
+    config:
+      all: true
