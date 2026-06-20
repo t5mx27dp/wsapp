@@ -64,7 +64,7 @@ func New(ctx context.Context, conn *websocket.Conn, logger app.Logger, decoder D
 	return a
 }
 
-func (a *App) Writing() chan<- message.Message {
+func (a *App) GetWriting() chan<- message.Message {
 	return a.writing
 }
 

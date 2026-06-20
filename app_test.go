@@ -110,7 +110,7 @@ func TestApp(t *testing.T) {
 		app := wsapp.New(ctx, conn, logger, Decode, Encode, handlers)
 
 		go func() {
-			writing := app.Writing()
+			writing := app.GetWriting()
 
 			writing <- &Message{
 				Type: ClientToServerHello,
